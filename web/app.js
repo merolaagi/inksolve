@@ -194,6 +194,11 @@
     }
     if (ok && r.solution) h += solutionHtml(r.solution, r.lines);
     $("#result").innerHTML = h;
+    if (window.Guide && r.lines.length) {
+      const l = r.lines[0];
+      Guide.context("solve", { kind: "reading", text: r.lines.map((x) => x.text || "?").join(" ; "), marks: r.glyphs.length, conf: pct(l.confidence, 0), truth: l.truth ? l.truth.true : null,
+        mode: S.mode, changed: r.lines.flatMap((x) => x.why || []) });
+    }
     $$("#result select[data-glyph]").forEach((sel) => (sel.onchange = async () => {
       const gi = +sel.dataset.glyph, label = sel.value;
       if (!label) return;

@@ -122,6 +122,7 @@
     renderModel(T.k);
     $("#cd-note").innerHTML = note(prev, s);
     requestAnimationFrame(arrows);
+    if (window.Guide) Guide.context("code", facts(prev, s));
   }
 
   const refsOf = (v) => (v.k === "ref" ? [v.ref] : v.k === "tuple" ? v.refs : []);
@@ -188,6 +189,42 @@
       row.append(c1, c2);
       host.appendChild(row);
     }
+  }
+
+
+  // ---------------------------------------------------------------- structured facts for the Guide
+  function facts(prev, s) {
+    const d = T.data, p = paramsAt(T.k), base = { step: T.k + 1, of: d.steps.length, label: d.label, lr: d.lr };
+    if (!prev) return { kind: "start", ...base };
+    const L = (d.code[prev.line - 1] || "").trim(), h = objOf(s, "h");
+    base.code = L;
+    const conv = L.match(/net\.(conv\d)\.weight/);
+    if (conv && L.startsWith("h = F.conv2d")) { const w = d.objects[p[`${conv[1]}.weight`].w], pos = h.shape[2] * h.shape[3]; return { kind: "conv", ...base, layer: conv[1], filters: w.shape[0], inC: w.shape[1], per: w.shape[1] * 9, weights: w.n, positions: pos, shape: shp(h.shape), n: h.n, macs: w.n * pos }; }
+    if (L.startsWith("h = F.relu(normalize")) return { kind: "bnrelu", ...base, zeros: Math.round(h.stats.zeros * 100), shape: shp(h.shape) };
+    if (L.startsWith("h = F.max_pool2d")) { const ph = objOf(prev, "h"); return { kind: "pool", ...base, from: ph ? shp(ph.shape) : "", to: shp(h.shape) }; }
+    if (L.startsWith("v = h.flatten")) return { kind: "flatten", ...base, n: objOf(s, "v").n };
+    if (L.startsWith("a = F.relu(v @ net.fc1")) return { kind: "fc1", ...base, off: Math.round(objOf(s, "a").stats.zeros * 128) };
+    if (L.startsWith("logits = a @ net.fc2")) { const lg = objOf(s, "logits").values; const top = lg.indexOf(Math.max(...lg)); return { kind: "fc2", ...base, guess: d.classes[top] }; }
+    if (L.startsWith("return logits")) return { kind: "return_forward", ...base };
+    if (L.startsWith("logits, a = forward")) return { kind: "after_forward", ...base };
+    if (L.startsWith("probs = F.softmax")) { const v = objOf(s, "probs").values, top = [...v.keys()].sort((x, y) => v[y] - v[x]).slice(0, 3); return { kind: "softmax", ...base, top: top.map((i) => `“${d.classes[i]}” ${(v[i] * 100).toFixed(1)}%`).join(", "), p: (v[d.classes.indexOf(d.label)] * 100).toFixed(2) + "%", guess: d.classes[top[0]] }; }
+    if (L.startsWith("loss = -torch.log")) return { kind: "loss", ...base, loss: num(objOf(s, "loss").value) };
+    if (L.startsWith("loss.backward")) {
+      const per = LAYERS.filter((l) => p[`${l}.weight`]?.g && (l.startsWith("conv") || l.startsWith("fc"))).map((l) => `${l} ${num(d.objects[p[`${l}.weight`].g].stats.abs)}`);
+      const zero = LAYERS.filter((l) => l.startsWith("conv") || l.startsWith("fc")).map((l) => d.objects[p[`${l}.weight`].g]).reduce((a, o) => a + Math.round(o.stats.zeros * o.n), 0);
+      return { kind: "backward", ...base, per: per.join(" · "), zero, n: Object.values(p).filter((x) => x.g).length };
+    }
+    if (L.startsWith("error =")) return { kind: "error", ...base };
+    if (L.startsWith("grad_fc2")) return { kind: "grad_fc2", ...base, zeros: Math.round(objOf(s, "grad_fc2").stats.zeros * 100) };
+    if (L.startsWith("with torch.no_grad")) return { kind: "no_grad", ...base };
+    if (L.startsWith("length =")) return { kind: "length", ...base, len: num(objOf(s, "length").value), total: Object.values(p).reduce((a, x) => a + d.objects[x.w].n, 0) };
+    if (L.startsWith("scale =")) return { kind: "scale", ...base, scale: objOf(s, "scale").v };
+    if (L.startsWith("for layer in")) return { kind: "for", ...base, layer: layerAt(T.k) };
+    const m = L.match(/^layer\.(weight|bias) -=/);
+    if (m) { const ly = layerAt(T.k - 1) || layerAt(T.k), o = d.objects[p[`${ly}.${m[1]}`].w]; const sc = objOf(s, "scale"); return { kind: "update", ...base, layer: ly, which: m[1], n: o.n, changed: o.changed || 0, maxmove: num(o.maxmove || 0), scale: sc ? sc.v : 1 }; }
+    if (L.startsWith("net.zero_grad")) return { kind: "zero_grad", ...base };
+    if (L.startsWith("return loss")) return { kind: "done", ...base, loss: num(d.loss), total: Object.values(p).reduce((a, x) => a + d.objects[x.w].n, 0) };
+    return { kind: "other", ...base };
   }
 
   // ---------------------------------------------------------------- what the line just did
@@ -298,6 +335,11 @@
     btn.disabled = false; btn.textContent = "Run a traced training step";
   }
   $("#cd-run").onclick = run;
+  window.Tutor = {
+    go: (k) => T.data && go(k), next: () => T.data && T.k < T.data.steps.length - 1 && (go(T.k + 1), true), at: () => (T.data ? { k: T.k, n: T.data.steps.length } : null),
+    phase: (name) => { const b = $$("#cd-phases button").find((x) => x.textContent.startsWith(name)); if (b) b.click(); },
+    run: (label, sym) => { if (label) $("#cd-label").value = label; if (sym) { sample = { c: sym, seed: Math.floor(Math.random() * 1e6) }; } return run(); },
+  };
   let started = false;
   function start() {
     if (started || $('[data-ds-view="code"]').hidden) return;

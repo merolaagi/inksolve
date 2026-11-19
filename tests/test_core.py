@@ -132,6 +132,20 @@ def test_traced_code_is_the_real_network():
     assert abs(out["loss"] - loss.item()) < 1e-5
 
 
+def test_guide_key_is_local_only_and_ask_needs_a_key(tmp_path=None):
+    import os
+    import tempfile
+
+    os.environ["INKSOLVE_DATA"] = tempfile.mkdtemp()
+    os.environ.pop("ANTHROPIC_API_KEY", None)
+    from fastapi.testclient import TestClient
+
+    from server.app import app
+    c = TestClient(app)
+    assert c.post("/api/guide/key", json={"key": "sk-x"}, headers={"x-forwarded-for": "1.2.3.4"}).status_code == 403
+    assert c.post("/api/guide/ask", json={"question": "what is a gradient?"}).status_code == 409
+
+
 if __name__ == "__main__":
     for k, f in list(globals().items()):
         if k.startswith("test_"):

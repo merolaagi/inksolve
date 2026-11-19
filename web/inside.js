@@ -387,6 +387,7 @@ function pick(e) {
   const h = locate(e);
   if (!h || h.st.kind !== "w") return;
   S.pinned = { st: h.st, i: h.i, name: h.st.name };
+  guide("weight", { layer: h.st.name });
   renderBody();
   document.getElementById("one-weight")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -421,6 +422,7 @@ function buildNav() {
   $$("#in-stages button").forEach((b) => (b.onclick = () => flyTo(b.dataset.fly === "all" ? null : S.stages.find((s) => s.name + s.kind === b.dataset.fly))));
 }
 
+const guide = (kind, f = {}) => window.Guide && window.Guide.context("inside", { kind, ...f });
 // ------------------------------------------------------------------ the three phases
 function setMode(m) {
   S.mode = m;
@@ -455,6 +457,7 @@ async function animForward() {
   cap("<b>Forward pass.</b> Each layer multiplies what comes in by its weights, adds them up and passes the result on. Bright weights are the ones doing the work for this mark.");
   await sweep(1, 3200, (st) => { if (st.kind === "w") colorStage(st, "use"); else { colorStage(st); growTo(st, targetHeights(st)); } });
   const top = topk(S.acts.fc2.v, 1)[0];
+  guide("forward", { guess: S.data.classes[top], p: pct(S.acts.fc2.v[top], 0), macs: flops() });
   cap(`<b>Forward pass done:</b> it reads the mark as <b>“${esc(S.data.classes[top])}”</b> (${pct(S.acts.fc2.v[top], 0)}). ${fmtInt(S.data.counts.shown)} weights were each used once: about ${fmtInt(flops())} multiply-adds.`);
   if (prev !== "use") { /* stay on use, it is what forward means */ }
 }
@@ -462,6 +465,7 @@ async function animBackward() {
   S.mode = "grad"; $$("#in-mode button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.cmode === "grad"))); legend();
   S.stages.forEach((s) => { if (s.kind === "w") colorStage(s, "none"); });
   const lab = $("#in-label").value;
+  guide("backward", { loss: sci(S.data.loss) });
   cap(`<b>Backward pass.</b> Starting from how wrong the answer was (loss ${sci(S.data.loss)} for “${esc(lab)}”), the chain rule works back through every layer and gives each weight its gradient.`);
   await sweep(-1, 3000, (st) => { if (st.kind === "w") colorStage(st, "grad"); });
   const g = S.data.layers.map((l) => `${l.name} ${sci(l.stats.mean_abs_g, 1)}`).join(" · ");
@@ -482,6 +486,7 @@ async function animUpdate() {
   const lab = $("#in-label").value, k = S.data.classes.indexOf(lab);
   const before = S.data.probs[k], after = S.data.probs_after?.[k];
   const moved = S.data.layers.reduce((a, l) => a + l.stats.changed * l.stats.n, 0);
+  guide("update", { text: `${fmtInt(moved)} of ${fmtInt(S.data.counts.shown)} weights moved. “${lab}” went from ${pct(before)} to ${pct(after)}.` });
   cap(`<b>One step done.</b> ${fmtInt(moved)} of ${fmtInt(S.data.counts.shown)} weights moved, by ${sci(avgMoved(), 1)} on average. “${esc(lab)}” went from ${pct(before)} to <b>${pct(after)}</b>.`);
 }
 const avgMoved = () => { let s = 0, n = 0; S.data.layers.forEach((l) => { s += l.stats.mean_abs_d * l.stats.n; n += l.stats.n; }); return s / n; };
@@ -500,7 +505,7 @@ async function guard(fn) {
 }
 function first(d) {
   ingest(d);
-  if (!S.built) { buildStages(d); S.built = true; S.stages.forEach((s) => { writeHeights(s, targetHeights(s)); colorStage(s); }); flyTo(null); legend(); }
+  if (!S.built) { guide("idle", { shown: d.counts.shown }); buildStages(d); S.built = true; S.stages.forEach((s) => { writeHeights(s, targetHeights(s)); colorStage(s); }); flyTo(null); legend(); }
   if (!S.labelsFilled) { $("#in-label").innerHTML = d.classes.map((c) => `<option>${esc(c)}</option>`).join(""); S.labelsFilled = true; }
   if (!S.labelTouched) { const top = topk(S.acts.fc2.v, 1)[0]; $("#in-label").value = S.sample ? S.sample.c : d.classes[top]; }
   drawInput();
@@ -553,6 +558,7 @@ async function playLoop() {
       S.stages.forEach((s) => { colorStage(s, S.mode === "grad" || S.mode === "update" ? "value" : S.mode); growTo(s, targetHeights(s), 450); });
       if (S.mode === "grad" || S.mode === "update") setMode("value");
       const top = topk(S.acts.fc2.v, 1)[0];
+      guide("train", { text: `Step ${fmtInt(t.steps)}: loss ${t.loss.toFixed(3)}, batch accuracy ${pct(t.acc, 0)}. Your mark now reads as “${d.classes[top]}”.` });
       cap(`<b>Training on batches of 32.</b> Step ${fmtInt(t.steps)} · loss ${t.loss.toFixed(3)} · batch accuracy ${pct(t.acc, 0)} · your mark now reads as “${esc(d.classes[top])}” (${pct(S.acts.fc2.v[top], 0)}).`);
       S.data = d;
       drawInput();

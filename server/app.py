@@ -460,7 +460,8 @@ def search(q: str = ""):
 def health():
     net, T, meta = registry.load() if registry.active_id() else (None, None, None)
     return {"ok": True, "version": VERSION, "device": M.device(), "model": meta and {"id": meta.get("id"), "name": meta.get("name"),
-            "temperature": meta.get("temperature")}, "classes": CLASSES, "jobs": jobs.active(), "password": bool(PASSWORD)}
+            "temperature": meta.get("temperature")}, "classes": CLASSES, "jobs": jobs.active(), "password": bool(PASSWORD),
+            "guide_ai": bool(_guide_key())}
 
 
 # ------------------------------------------------------------------ inside the model
@@ -547,6 +548,86 @@ async def code_trace(req: Request):
         lab.history.append({"step": lab.steps, "loss": None, "kind": "traced"})
     out["source"] = lab.source
     return out
+
+
+# ------------------------------------------------------------------ the Guide's answers (optional, Claude)
+GUIDE_MODEL = os.environ.get("INKSOLVE_GUIDE_MODEL", "claude-sonnet-5-5")
+GUIDE_PROMPT = """You are the Guide inside InkSolve, an app that reads handwritten maths with a small convolutional network \
+(conv1-conv5 with BatchNorm, ReLU and max pooling, then fc1 128x576 and fc2 22x128; 141,470 parameters) and shows its \
+training step by step: in 3D (Inside the model) and as Python run line by line (Code). The person is looking at one step \
+right now; its live numbers are below. Answer their question in plain language for a curious non-specialist, in at most \
+150 words, using the actual numbers where they help. If the question is about large models (e.g. 20B parameters), relate \
+it to this small one. Don't invent numbers that aren't given or that you can't work out from them.
+
+Tab: {tab}
+What the Guide is showing: {explanation}
+Live numbers (JSON): {facts}
+
+Question: {question}"""
+
+
+def _settings():
+    try:
+        return json.loads((DATA / "settings.json").read_text())
+    except Exception:
+        return {}
+
+
+def _guide_key():
+    return os.environ.get("ANTHROPIC_API_KEY") or _settings().get("anthropic_key")
+
+
+def _local(request: Request):
+    """Settings that hold secrets may only be changed from this computer, never through a tunnel."""
+    fwd = any(h in request.headers for h in ("x-forwarded-for", "cf-connecting-ip", "x-real-ip", "forwarded"))
+    return request.client and request.client.host in ("127.0.0.1", "::1", "localhost") and not fwd
+
+
+@app.post("/api/guide/key")
+async def guide_key(req: Request):
+    if not _local(req):
+        err("The API key can only be set from the computer InkSolve runs on.", 403)
+    b = await req.json()
+    key = (b.get("key") or "").strip()
+    if key and not key.startswith("sk-"):
+        err("That doesn't look like an Anthropic API key.")
+    s = _settings()
+    if key:
+        s["anthropic_key"] = key
+    else:
+        s.pop("anthropic_key", None)
+    f = DATA / "settings.json"
+    f.write_text(json.dumps(s))
+    os.chmod(f, 0o600)
+    return {"ai": bool(_guide_key())}
+
+
+@app.post("/api/guide/ask")
+async def guide_ask(req: Request):
+    import urllib.error
+    import urllib.request
+
+    key = _guide_key()
+    if not key:
+        err("No Anthropic API key saved.", 409)
+    b = await req.json()
+    q = (b.get("question") or "").strip()[:800]
+    if not q:
+        err("Ask a question.")
+    prompt = GUIDE_PROMPT.format(tab=str(b.get("tab"))[:40], explanation=str(b.get("explanation") or "")[:2500],
+                                 facts=json.dumps(b.get("facts") or {})[:3000], question=q)
+    body = {"model": GUIDE_MODEL, "max_tokens": 500, "messages": [{"role": "user", "content": prompt}]}
+    r = urllib.request.Request("https://api.anthropic.com/v1/messages", data=json.dumps(body).encode(),
+                               headers={"content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01"})
+    try:
+        import asyncio
+
+        data = await asyncio.to_thread(lambda: json.loads(urllib.request.urlopen(r, timeout=60).read()))
+    except urllib.error.HTTPError as e:
+        err(f"Anthropic API error {e.code}: {e.read().decode(errors='ignore')[:300]}", 502)
+    except Exception as e:
+        err(f"Couldn't reach Claude: {e}", 502)
+    return {"answer": "".join(c.get("text", "") for c in data.get("content", []) if c.get("type") == "text").strip(), "model": GUIDE_MODEL}
 
 
 app.mount("/static", StaticFiles(directory=ROOT / "web"), name="static")

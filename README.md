@@ -25,6 +25,8 @@ letter x, and how a b and a 6 get told apart. Then SymPy solves it and shows the
 | **Code** | Python Tutor for a neural network. The Python of one training step (`server/trace_code.py`: forward pass, loss, `backward()`, the last layer's gradient by hand, the update) really runs on the real weights under a line tracer. Step forward and back: the line that just ran and the next one are marked, the frames show every variable, arrows point to each tensor drawn as a heatmap, and the model's 24 weight and bias tensors show their gradients appearing and their values moving, layer by layer. |
 | **How it works** | The method, in plain words. |
 
+**The Guide** is a window in the bottom-right corner of every tab. On the Code tab it explains each line as you step: what just happened, with the real numbers, why it matters, and what the same line means in a 20-billion-parameter model. **▶ Walk me through** steps through the whole training step on its own (and reads it aloud if 🔊 is on). It points at the part of the page it's talking about, and its buttons do things: jump to the backward pass, run a new step, play a training step in 3D, try the 1-or-7 example. Ask it questions: a built-in glossary answers offline; with an Anthropic API key saved through ⚙ (stored in `data/settings.json`, and settable only from this computer) Claude answers anything, using the current step's numbers. Drag it by its title, double-click the title to put it back, – to tuck it away.
+
 ## What it reads
 
 Digits, `+ − × ÷ / = ( )`, the letters `x y a b z`, decimal points, exponents (written
