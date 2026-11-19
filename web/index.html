@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InkSolve</title>
+<script>try{var t=localStorage.getItem("inksolve-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b07a1e'/%3E%3Cpath d='M8 21c3-9 5-12 7-12s1 7 3 7 3-4 6-6' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/vendor/katex/katex.min.css">
+<script src="/static/vendor/katex/katex.min.js"></script>
+<link rel="stylesheet" href="/static/docs-shell.css">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="ds-top">
+  <a class="ds-brand" href="#/solve"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--ds-accent)"/><path d="M8 21c3-9 5-12 7-12s1 7 3 7 3-4 6-6" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>InkSolve</a>
+  <div class="ds-tools"><a href="https://github.com/merolaagi/inksolve" class="ds-hide-narrow" target="_blank" rel="noopener">GitHub</a></div>
+  <nav class="ds-tabs" aria-label="Sections">
+    <button data-ds-tab="solve" aria-selected="true" data-ds-hint="draw, photograph or type maths and solve it">Solve</button>
+    <button data-ds-tab="hand" data-ds-hint="teach InkSolve your handwriting; datasets">Your handwriting</button>
+    <button data-ds-tab="train" data-ds-hint="train and compare symbol readers">Train</button>
+    <button data-ds-tab="experiment" data-ds-hint="how few examples does it need">Experiment</button>
+    <button data-ds-tab="how" data-ds-hint="how reading with context works">How it works</button>
+  </nav>
+  <div class="ds-banner" id="banner" hidden></div>
+</header>
+
+<main class="ds-main">
+  <!-- ======================================================== SOLVE -->
+  <section class="ds-view" data-ds-view="solve">
+    <aside class="ds-rail">
+      <div class="ds-nav-title">Solve</div>
+      <ul class="ds-nav" id="input-nav">
+        <li><button data-input="draw" aria-selected="true">Draw</button></li>
+        <li><button data-input="photo">Photo or scan</button></li>
+        <li><button data-input="type">Type</button></li>
+      </ul>
+      <h2>Reading</h2>
+      <div class="seg" role="radiogroup" aria-label="Reading mode">
+        <button data-mode="solve" aria-checked="true" role="radio">Solve</button>
+        <button data-mode="grade" aria-checked="false" role="radio">Mark work</button>
+      </div>
+      <p class="ds-hint" id="mode-hint">Context may fix a mark: a 1 that must be a 7 for the sum to be true is read as 7.</p>
+      <h2>Examples</h2>
+      <ul class="ds-nav" id="examples"></ul>
+      <h2>Recent</h2>
+      <ul class="ds-nav recent" id="recent"><li class="ds-hint">Nothing read yet.</li></ul>
+      <p class="ds-hint" id="model-line"></p>
+    </aside>
+    <article class="ds-doc">
+      <h1 class="ds-no-toc">Solve</h1>
+      <p class="ds-meta-line" id="solve-meta">Write a sum or an equation. InkSolve reads it as you write.</p>
+
+      <div class="ds-no-md" id="in-draw">
+        <div class="pad-wrap"><canvas id="pad" aria-label="Writing area: draw with a mouse, pen or finger"></canvas>
+          <div class="pad-empty" id="pad-empty">Write here, e.g. <b>2x + 3 = 11</b> or <b>6 + 1 = 7</b></div></div>
+        <div class="row">
+          <button class="ds-btn" id="undo" title="Undo (⌘Z)">Undo</button>
+          <button class="ds-btn" id="clear">Clear</button>
+          <span class="grow"></span>
+          <button class="ds-btn primary" id="go-draw">Solve</button>
+        </div>
+      </div>
+      <div class="ds-no-md" id="in-photo" hidden>
+        <label class="drop" id="drop"><input type="file" id="file" accept="image/*" capture="environment">
+          <span><b>Choose a photo</b> or drop one here. Dark writing on plain paper, cropped to the maths, works best.</span></label>
+        <div class="photo-wrap" id="photo-wrap" hidden><img id="photo" alt="Your photo"><div class="boxes" id="photo-boxes"></div></div>
+        <div class="row"><span class="grow"></span><button class="ds-btn primary" id="go-photo" disabled>Solve</button></div>
+      </div>
+      <div class="ds-no-md" id="in-type" hidden>
+        <textarea id="typed" rows="3" spellcheck="false" placeholder="2x + 3 = 11      (x^2, 3*4 or 3×4, 12÷4; one equation per line for a system)"></textarea>
+        <div class="row"><span class="grow"></span><button class="ds-btn primary" id="go-type">Solve</button></div>
+      </div>
+
+      <div id="result"></div>
+    </article>
+  </section>
+
+  <!-- ======================================================== YOUR HANDWRITING -->
+  <section class="ds-view" data-ds-view="hand" hidden>
+    <aside class="ds-rail">
+      <div class="ds-nav-title">Your handwriting</div>
+      <ul class="ds-nav">
+        <li><a href="#write-samples">Write samples</a></li>
+        <li><a href="#what-it-has-seen">What it has seen</a></li>
+        <li><a href="#your-samples">Your samples</a></li>
+        <li><a href="#datasets">Datasets</a></li>
+      </ul>
+      <h2>Why</h2>
+      <p class="ds-hint">A few dozen of your own 1s and 7s teach the reader more about your hand than thousands of strangers'. Each sample counts five times when training. Corrections you make on the Solve tab are saved here too.</p>
+    </aside>
+    <article class="ds-doc">
+      <h1 class="ds-no-toc">Your handwriting</h1>
+      <p class="ds-meta-line" id="hand-meta"></p>
+      <h2 id="write-samples">Write samples</h2>
+      <p class="ds-sub">Write the symbol shown, as you normally would. It is saved when you press Save or Enter, then the next symbol comes up, favouring the look-alikes (1 and 7, b and 6, z and 2) and whatever you have fewest of.</p>
+      <div class="collect ds-no-md">
+        <div>
+          <div class="prompt">Write <b id="target">7</b></div>
+          <canvas id="cpad" width="240" height="240" aria-label="Write one symbol here"></canvas>
+          <div class="row"><button class="ds-btn" id="cclear">Clear</button><span class="grow"></span><button class="ds-btn" id="cskip">Skip</button><button class="ds-btn primary" id="csave">Save</button></div>
+        </div>
+        <div>
+          <p class="ds-hint" style="margin-top:0">Or pick a symbol:</p>
+          <div class="keys" id="keys"></div>
+          <p class="ds-hint" id="csaved"></p>
+        </div>
+      </div>
+      <h2 id="what-it-has-seen">What it has seen</h2>
+      <p class="ds-sub">Examples of each symbol from each source. Synthetic handwriting is generated on demand, so it has no count.</p>
+      <div id="counts"></div>
+      <h2 id="your-samples">Your samples</h2>
+      <div id="gallery"></div>
+      <h2 id="datasets">Datasets</h2>
+      <p class="ds-sub">Real handwriting from other people, downloaded once to this computer.</p>
+      <div id="datasets-body"></div>
+    </article>
+  </section>
+
+  <!-- ======================================================== TRAIN -->
+  <section class="ds-view" data-ds-view="train" hidden>
+    <aside class="ds-rail">
+      <div class="ds-nav-title">Train</div>
+      <ul class="ds-nav"><li><a href="#models">Models</a></li><li><a href="#model-detail">Selected model</a></li></ul>
+      <h2>New model</h2>
+      <p class="ds-hint">Examples of each symbol to take from each source.</p>
+      <label class="ds-field">Synthetic<input id="t-syn" type="number" min="0" max="5000" value="400"></label>
+      <label class="ds-field">MNIST (digits)<input id="t-mnist" type="number" min="0" max="6000" value="1000"></label>
+      <label class="ds-field">HASYv2 (symbols)<input id="t-hasy" type="number" min="0" max="2000" value="0"></label>
+      <label class="ds-field">Yours<select id="t-mine"><option value="all">All of them</option><option value="">None</option></select></label>
+      <label class="ds-field">Steps<input id="t-steps" type="number" min="50" max="20000" value="2000"></label>
+      <label class="ds-field">Start from<select id="t-init"><option value="">Nothing (from scratch)</option></select></label>
+      <label class="check"><input type="checkbox" id="t-aug" checked> Augment (bend each example many ways)</label>
+      <label class="ds-field">Name<input id="t-name" placeholder="optional"></label>
+      <button class="ds-btn primary" id="t-go">Train</button>
+      <p class="ds-hint" id="t-hint"></p>
+    </aside>
+    <article class="ds-doc">
+      <h1 class="ds-no-toc">Train</h1>
+      <p class="ds-meta-line" id="train-meta"></p>
+      <div id="train-live"></div>
+      <h2 id="models">Models</h2>
+      <p class="ds-sub">Accuracy on writers each model never saw. The one in use reads everything on the Solve tab.</p>
+      <div id="models-body"></div>
+      <h2 id="model-detail">Selected model</h2>
+      <div id="model-detail-body"></div>
+    </article>
+  </section>
+
+  <!-- ======================================================== EXPERIMENT -->
+  <section class="ds-view" data-ds-view="experiment" hidden>
+    <aside class="ds-rail">
+      <div class="ds-nav-title">Experiment</div>
+      <ul class="ds-nav" id="exp-nav"></ul>
+      <h2>Run it</h2>
+      <div class="seg" role="radiogroup" aria-label="Size">
+        <button data-preset="quick" aria-checked="true" role="radio">Quick</button>
+        <button data-preset="full" aria-checked="false" role="radio">Full</button>
+      </div>
+      <p class="ds-hint" id="preset-hint"></p>
+      <label class="check"><input type="checkbox" data-recipe="scratch" checked> From scratch</label>
+      <label class="check"><input type="checkbox" data-recipe="augment" checked> + augmentation</label>
+      <label class="check"><input type="checkbox" data-recipe="pretrain" checked> + synthetic pretraining</label>
+      <button class="ds-btn primary" id="e-go">Run the experiment</button>
+      <p class="ds-hint">Real digits come from MNIST once it is downloaded; other symbols from HASYv2 if downloaded, otherwise synthetic. Test writers are never seen in training.</p>
+    </aside>
+    <article class="ds-doc" id="exp-body"></article>
+  </section>
+
+  <!-- ======================================================== HOW IT WORKS -->
+  <section class="ds-view" data-ds-view="how" hidden>
+    <aside class="ds-rail">
+      <div class="ds-nav-title">How it works</div>
+      <ul class="ds-nav">
+        <li><a href="#from-ink-to-marks">From ink to marks</a></li>
+        <li><a href="#reading-one-mark">Reading one mark</a></li>
+        <li><a href="#context">Context: why 6 + 1 makes a 7</a></li>
+        <li><a href="#marking-work">Marking work</a></li>
+        <li><a href="#fewer-examples">Fewer examples</a></li>
+        <li><a href="#solving">Solving</a></li>
+        <li><a href="#data">Data</a></li>
+        <li><a href="#limits">Limits</a></li>
+      </ul>
+    </aside>
+    <article class="ds-doc">
+      <h1 class="ds-no-toc">How it works</h1>
+      <p class="ds-meta-line">Ink → marks → symbols → a reading that makes sense → a worked answer</p>
+      <p>InkSolve reads handwritten maths in two halves that are kept apart on purpose: a small network that only looks at the <em>shape</em> of each mark, and a decoder that knows what maths is allowed to say. The shape model is honest about close calls, and the decoder settles them.</p>
+
+      <h2 id="from-ink-to-marks">From ink to marks</h2>
+      <p>Pen strokes (or, for a photo, connected blobs of ink) are grouped into marks. Strokes that touch or cross belong to one mark, so the two strokes of a + or a 4 become one. Some marks are decided by their layout alone:</p>
+      <ul>
+        <li>two short level bars, one above the other: <b>=</b></li>
+        <li>a bar with a dot above and below: <b>÷</b></li>
+        <li>a long bar with writing above and below: a <b>fraction</b></li>
+        <li>a mark written smaller and higher than the one before: an <b>exponent</b></li>
+        <li>a dot low between two digits: a <b>decimal point</b></li>
+        <li>writing well below other writing: a <b>new line</b>, so two lines make a system of equations</li>
+      </ul>
+
+      <h2 id="reading-one-mark">Reading one mark</h2>
+      <p>Each mark is cropped, scaled so its longer side is 20 pixels, centred in a 28 × 28 square and re-drawn with a standard pen width. A convolutional network of about 150,000 weights gives a probability for each of the 22 symbols: the digits, + − × ÷ / = ( ), and the letters x, y, a, b, z.</p>
+      <p>The last step of training is <b>temperature scaling</b>: one number that makes the probabilities honest, so that marks the model calls 60% a 1 really are 1s about 60% of the time. The Train tab shows how honest each model is as its calibration error (ECE). Context can only settle close calls well if “close” means what it says.</p>
+
+      <h2 id="context">Context: why 6 + 1 makes a 7</h2>
+      <p>Many people write a 7 that looks like a 1. Looking at that mark alone, the best a model can say is something like “62% a 1, 37% a 7”. A person reading <b>6 + 1 = ?</b> isn't unsure at all, because they also know what the sum has to be.</p>
+      <p>InkSolve does the same thing, in the way speech recognisers and spelling correctors do (a <em>noisy-channel</em> decoder). It builds whole readings of the line, keeping the best 96 at each step, and scores each one as</p>
+      <pre>score(reading) = log P(marks look like this | reading)    shape, from the network
+               + grammar                                   impossible readings are never kept
+               + small dislikes                            a number written 07
+               − 4 if the reading is a false sum            in Solve mode only</pre>
+      <p>So for the last mark of 6 + 1 = ? the two candidates are:</p>
+      <table><thead><tr><th>Reading</th><th class="num">Shape</th><th class="num">Context</th><th class="num">Total</th></tr></thead>
+        <tbody><tr><td>6 + 1 = 1 (false)</td><td class="num">log 0.62 = −0.48</td><td class="num">−4</td><td class="num">−4.48</td></tr>
+        <tr><td>6 + 1 = 7 (true)</td><td class="num">log 0.37 = −0.99</td><td class="num">0</td><td class="num"><b>−0.99</b></td></tr></tbody></table>
+      <p>The 7 wins, and InkSolve says so: the mark is outlined in amber and the reading explains that it looks 62% like a 1 but reads as 7 because only then is the sum true. A clearly written 1 is not overruled: if the shape says 99.5% a 1, the 7 starts at log 0.005 = −5.3 and loses even with the help.</p>
+      <p>The same machinery decides whether an x is the letter or a times sign: <b>2x + 3</b> can only be the letter, <b>3x4</b> can only be 3 × 4. It also decides between b and 6, z and 2, and 5 and S-like 3s when an equation needs one or the other.</p>
+
+      <h2 id="marking-work">Marking work</h2>
+      <div class="ds-callout">Context must never “correct” the answer being marked. A pupil who wrote 6 + 1 = 1 has to be read as having written 1.</div>
+      <p>Mark work mode switches the truth term off. Grammar still applies (a mark between two numbers is still an operator), but whether the sum is true is not used to read it. Instead, every mark whose shape alone is less than 80% sure is listed for a person to look at, and the statement is marked true or false as written. The Experiment tab measures this: in Solve mode some false sums get “corrected” into true ones; in Mark work mode that number should be zero.</p>
+
+      <h2 id="fewer-examples">Fewer examples</h2>
+      <p>Why show the model 20,000 different 7s? Not to memorise them, but so that it learns which differences don't matter (slant, size, pen width, a wobble, a crossbar or not) and which one does (the long top stroke). Twenty thousand <em>varied</em> 7s teach that; twenty thousand near-copies don't. That suggests ways to need fewer real examples, and the Experiment tab tests each one:</p>
+      <ul>
+        <li><b>Augmentation:</b> every example is shown bent many ways (slant, rotation, size, elastic wobble, thicker or thinner pen), so each real example counts several times.</li>
+        <li><b>Pretraining on synthetic handwriting:</b> start from a model that has seen generated strokes for every symbol, then fine-tune on a few real ones.</li>
+        <li><b>Your own handwriting:</b> a few dozen samples of the look-alikes, from the one writer who matters, each counted five times.</li>
+        <li><b>Context:</b> a reader that is right 95% of the time on single marks can read more whole sums correctly with context than a better reader without it.</li>
+      </ul>
+
+      <h2 id="solving">Solving</h2>
+      <p>The reading is parsed into a tree that keeps exactly what was written, then solved with SymPy:</p>
+      <ul>
+        <li>a sum is worked out step by step in the order of operations</li>
+        <li>a statement like 6 + 1 = 7 is checked: both sides, then true or false</li>
+        <li>a linear equation: expand, gather the unknown on one side, divide</li>
+        <li>a quadratic: factorise if it factorises, otherwise the formula, showing the discriminant</li>
+        <li>several lines with unknowns: a system, solved together</li>
+        <li>one equation in two unknowns: rearranged for one of them</li>
+      </ul>
+      <p>Every answer is substituted back into what was written, to show both sides come out equal.</p>
+
+      <h2 id="data">Data</h2>
+      <table><thead><tr><th>Source</th><th>What</th><th>Used for</th></tr></thead><tbody>
+        <tr><td>Synthetic</td><td>Every symbol drawn as pen strokes in several real styles, bent at random</td><td>Covering every symbol from the first run; pretraining</td></tr>
+        <tr><td><a href="http://yann.lecun.com/exdb/mnist/" target="_blank" rel="noopener">MNIST</a></td><td>70,000 handwritten digits from about 500 writers</td><td>Real digits</td></tr>
+        <tr><td><a href="https://zenodo.org/record/259444" target="_blank" rel="noopener">HASYv2</a></td><td>168,000 handwritten symbols; InkSolve keeps operators, brackets and letters</td><td>Real symbols, tested on held-out writers</td></tr>
+        <tr><td>Yours</td><td>What you write on the Your handwriting tab and corrections from Solve</td><td>Your hand, five times over</td></tr>
+      </tbody></table>
+      <p>Larger datasets of whole handwritten expressions exist, such as <a href="https://arxiv.org/html/2404.10690v1" target="_blank" rel="noopener">MathWriting</a> and CROHME; they are the natural next step for training on whole lines rather than single marks.</p>
+
+      <h2 id="limits">Limits</h2>
+      <ul>
+        <li>22 symbols for now: no square roots, Greek letters, inequalities or calculus.</li>
+        <li>Marks that touch each other in a photo (a 1 joined to the next digit) are read as one.</li>
+        <li>Until HASYv2 is downloaded, operators and letters are learnt from synthetic handwriting and your own, so how well they are read from strangers' writing is only known after that download and a training run.</li>
+      </ul>
+    </article>
+  </section>
+</main>
+
+<script src="/static/docs-shell.js"></script>
+<script src="/static/chart.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+/* docs-shell.css: the Tinker-docs look (Material for MkDocs, Thinking Machines' theme) for any web app.
+   White header with a grey search box and ⌘K, a quiet tab row, a left nav with an amber accent and a thin
+   draggable edge, content set as a document, "On this page" on the right, light and dark.
+   Every class starts with ds- so it never collides with the app's own styles. */
+
+:root {
+  --ds-accent: #b07a1e; --ds-accent-bg: #fbf3e3;
+  --ds-head: #3a3a3a; --ds-text: #262626; --ds-dim: #6e6e6e; --ds-faint: #9a9a9a;
+  --ds-rule: #e6e6e3; --ds-th: #f7f7f5; --ds-field: #f3f3f1; --ds-code: #f2f2f0; --ds-hover: #f6f6f4;
+  --ds-bg: #ffffff; --ds-btn: #1c1c1c; --ds-btn-text: #ffffff; --ds-link: #94650f;
+  --ds-scrim: rgba(20, 20, 20, .45); --ds-shadow: 0 8px 30px rgba(0, 0, 0, .12), 0 1px 3px rgba(0, 0, 0, .08);
+  --ds-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --ds-mono: "Roboto Mono", "SF Mono", Menlo, Consolas, monospace;
+  --ds-hdr: 121px; --ds-rail-w: 300px; --ds-toc-w: 250px; --ds-max: 1560px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --ds-accent: #e0b25c; --ds-accent-bg: rgba(224, 178, 92, .12); --ds-head: #e6e6e6; --ds-text: #dedede; --ds-dim: #a3a3a3; --ds-faint: #777;
+  --ds-rule: #2e2e2e; --ds-th: #1f1f1f; --ds-field: #222; --ds-code: #262626; --ds-hover: #202020; --ds-bg: #161616;
+  --ds-btn: #ececec; --ds-btn-text: #161616; --ds-link: #e0b25c; --ds-scrim: rgba(0, 0, 0, .6); --ds-shadow: 0 8px 30px rgba(0, 0, 0, .5); color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ds-accent: #e0b25c; --ds-accent-bg: rgba(224, 178, 92, .12); --ds-head: #e6e6e6; --ds-text: #dedede; --ds-dim: #a3a3a3; --ds-faint: #777;
+    --ds-rule: #2e2e2e; --ds-th: #1f1f1f; --ds-field: #222; --ds-code: #262626; --ds-hover: #202020; --ds-bg: #161616;
+    --ds-btn: #ececec; --ds-btn-text: #161616; --ds-link: #e0b25c; --ds-scrim: rgba(0, 0, 0, .6); --ds-shadow: 0 8px 30px rgba(0, 0, 0, .5); color-scheme: dark;
+  }
+}
+
+/* base. overflow-x must be clip, never hidden: hidden turns <body> into a scroll container and silently
+   switches off every sticky element (header, left nav, table of contents). */
+html, body { margin: 0; background: var(--ds-bg); color: var(--ds-text); font: 15px/1.65 var(--ds-sans); -webkit-font-smoothing: antialiased; overflow-x: clip; }
+*, *::before, *::after { box-sizing: border-box; }
+a { color: var(--ds-link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, kbd, pre { font-family: var(--ds-mono); }
+code { background: var(--ds-code); border-radius: 3px; padding: .12em .4em; font-size: .86em; }
+pre { background: var(--ds-code); border-radius: 4px; padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+pre code { background: none; padding: 0; }
+:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--ds-accent) 28%, transparent); }
+[hidden] { display: none !important; }
+
+/* ---------------------------------------------------------------- header */
+.ds-top {
+  position: sticky; top: 0; z-index: 30; background: var(--ds-bg); border-bottom: 1px solid var(--ds-rule);
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 18px;
+  padding: 0 max(28px, calc((100vw - var(--ds-max)) / 2 + 28px));
+}
+.ds-brand { grid-row: 1; grid-column: 1; height: 70px; display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 600; letter-spacing: -.01em; color: var(--ds-text); text-decoration: none !important; }
+.ds-brand svg, .ds-brand img { height: 26px; width: auto; }
+.ds-top > .ds-search { grid-row: 1; grid-column: 2; justify-self: end; }
+.ds-tools { grid-row: 1; grid-column: 3; display: flex; align-items: center; gap: 6px; }
+.ds-tools a, .ds-tools button { display: inline-flex; align-items: center; gap: 8px; color: var(--ds-text); background: none; border: 0; border-radius: 4px; padding: 7px 9px; font: inherit; font-size: 15px; cursor: pointer; text-decoration: none; }
+.ds-tools a:hover, .ds-tools button:hover { background: var(--ds-hover); text-decoration: none; }
+.ds-tools svg { width: 20px; height: 20px; }
+.ds-theme svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.ds-tabs { grid-row: 2; grid-column: 1 / -1; display: flex; gap: 6px; height: 50px; align-items: center; overflow-x: auto; scrollbar-width: none; margin: 0 -10px; }
+.ds-tabs::-webkit-scrollbar { display: none; }
+.ds-tabs > a, .ds-tabs > button { color: var(--ds-dim); background: none; border: 0; border-radius: 4px; padding: 6px 10px; font: inherit; font-size: 15.5px; white-space: nowrap; cursor: pointer; text-decoration: none; transition: color .2s; }
+.ds-tabs > a:hover, .ds-tabs > button:hover { color: var(--ds-text); text-decoration: none; }
+.ds-tabs > [aria-selected="true"], .ds-tabs > [aria-current="page"] { color: var(--ds-text); font-weight: 500; }
+.ds-top > .ds-banner { grid-row: 3; grid-column: 1 / -1; margin: 0 calc(-1 * max(28px, calc((100vw - var(--ds-max)) / 2 + 28px))); padding: 8px max(28px, calc((100vw - var(--ds-max)) / 2 + 28px)); background: var(--ds-th); border-top: 1px solid var(--ds-rule); font-size: 14px; }
+
+/* ---------------------------------------------------------------- search: grey box, ⌘K, dims everything else */
+.ds-search { position: relative; width: min(100%, 280px); transition: width .25s; }
+.ds-search.open { width: min(100%, 820px); }
+.ds-search input { width: 100%; height: 42px; border: 1px solid var(--ds-rule); border-radius: 4px; padding: 0 64px 0 46px; font: inherit; font-size: 16px; background: var(--ds-field); color: var(--ds-text); }
+.ds-search input:focus { outline: none; }
+.ds-search input::placeholder { color: var(--ds-faint); }
+.ds-search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+.ds-search.open input { border-radius: 4px 4px 0 0; border-bottom-color: transparent; }
+.ds-search .ds-ico { position: absolute; left: 14px; top: 11px; width: 20px; height: 20px; fill: none; stroke: var(--ds-dim); stroke-width: 2; pointer-events: none; }
+.ds-search kbd { position: absolute; right: 10px; top: 9px; font: 12px/22px var(--ds-sans); color: var(--ds-dim); border: 1px solid var(--ds-rule); border-radius: 4px; padding: 0 7px; background: var(--ds-bg); }
+.ds-results { position: absolute; left: 0; right: 0; top: 42px; background: var(--ds-field); box-shadow: var(--ds-shadow); border: 1px solid var(--ds-rule); border-top: 0; border-radius: 0 0 4px 4px; max-height: min(70vh, 640px); overflow-y: auto; z-index: 40; }
+.ds-results .ds-meta { font-size: 14px; color: var(--ds-dim); padding: 10px 16px 12px 52px; }
+.ds-results .ds-g { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ds-faint); padding: 12px 16px 4px 52px; background: var(--ds-bg); border-top: 1px solid var(--ds-rule); }
+.ds-r { display: grid; grid-template-columns: 22px 1fr auto; gap: 14px; padding: 10px 16px; cursor: pointer; background: var(--ds-bg); }
+.ds-r.on { background: var(--ds-accent-bg); }
+.ds-r .ds-ri { color: var(--ds-faint); text-align: center; }
+.ds-r b { display: block; font-size: 15px; font-weight: 500; }
+.ds-r small { color: var(--ds-dim); font-size: 13px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ds-r mark { background: none; color: var(--ds-accent); font-weight: 600; }
+.ds-scrim { position: fixed; inset: 0; background: var(--ds-scrim); z-index: 49; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.ds-scrim.on { opacity: 1; pointer-events: auto; }
+/* while searching the header rises above the scrim and dims itself, all but the search box */
+.ds-top.ds-searching { z-index: 50; background: color-mix(in srgb, var(--ds-bg) 55%, #141414); border-bottom-color: transparent; }
+.ds-top.ds-searching > :not(.ds-search) { filter: brightness(.55); }
+
+/* ---------------------------------------------------------------- the three columns */
+.ds-main { max-width: var(--ds-max); margin: 0 auto; }
+.ds-view { display: grid; grid-template-columns: var(--ds-rail-w) 0 minmax(0, 1fr) var(--ds-toc-w); min-height: calc(100vh - var(--ds-hdr)); }
+.ds-view.ds-no-rail { grid-template-columns: 0 0 minmax(0, 1fr) var(--ds-toc-w); }
+.ds-rail { position: sticky; top: var(--ds-hdr); align-self: start; height: calc(100vh - var(--ds-hdr)); overflow: hidden auto; padding: 32px 20px 48px 28px; scrollbar-width: thin; scrollbar-color: var(--ds-rule) transparent; }
+.ds-doc { grid-column: 3; min-width: 0; padding: 30px 40px 110px; }
+.ds-toc { grid-column: 4; position: sticky; top: var(--ds-hdr); align-self: start; max-height: calc(100vh - var(--ds-hdr)); overflow-y: auto; padding: 32px 24px 40px 12px; font-size: 15px; }
+.ds-toc-t { font-weight: 600; margin: 0 0 10px; }
+.ds-toc ul { list-style: none; margin: 0; padding: 0; }
+.ds-toc a { display: block; color: var(--ds-text); padding: 5px 0; line-height: 1.4; text-decoration: none; }
+.ds-toc li.sub a { padding-left: 14px; font-size: 14px; color: var(--ds-dim); }
+.ds-toc a:hover, .ds-toc a.on { color: var(--ds-accent); text-decoration: none; }
+
+/* left nav */
+.ds-nav-title { font-size: 16px; font-weight: 500; color: var(--ds-accent); margin: 0 0 18px; padding-left: 14px; }
+.ds-nav { list-style: none; margin: 0 0 22px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.ds-nav a, .ds-nav button { display: block; width: 100%; text-align: left; padding: 10px 14px; border: 0; border-radius: 3px; background: none; color: var(--ds-text); font: inherit; font-size: 15.5px; line-height: 1.4; cursor: pointer; text-decoration: none; }
+.ds-nav a:hover, .ds-nav button:hover { color: var(--ds-accent); text-decoration: none; }
+.ds-nav .on, .ds-nav [aria-current="page"], .ds-nav [aria-selected="true"] { color: var(--ds-accent); background: var(--ds-accent-bg); }
+.ds-nav ul { list-style: none; padding-left: 14px; margin: 2px 0; }
+.ds-rail h2 { font-size: 15.5px; font-weight: 500; margin: 26px 0 8px; }
+.ds-rail h2:first-child { margin-top: 0; }
+.ds-hint { font-size: 13.5px; color: var(--ds-dim); line-height: 1.55; margin: 0 0 12px; }
+
+/* the rail's edge: a thin line you drag; nearly shut folds the panel; a small tab brings it back */
+.ds-handle { grid-column: 2; position: sticky; top: var(--ds-hdr); align-self: start; height: calc(100vh - var(--ds-hdr)); width: 0; z-index: 6; cursor: col-resize; touch-action: none; outline: none; }
+.ds-handle::before { content: ""; position: absolute; left: -.5px; top: 0; bottom: 0; width: 1px; background: var(--ds-rule); transition: background .15s, width .15s, left .15s; }
+.ds-handle::after { content: ""; position: absolute; left: -5px; top: 0; bottom: 0; width: 10px; }
+.ds-handle:hover::before, .ds-handle:focus-visible::before, .ds-handle.drag::before { left: -1px; width: 2px; background: var(--ds-accent); }
+.ds-grip { position: absolute; top: 50%; left: -3px; width: 6px; height: 34px; margin-top: -17px; border-radius: 3px; background: var(--ds-bg); border: 1px solid var(--ds-rule); opacity: 0; transition: opacity .15s; pointer-events: none; }
+.ds-handle:hover .ds-grip, .ds-handle.drag .ds-grip, .ds-handle:focus-visible .ds-grip { opacity: 1; }
+:root.ds-rail-off .ds-grip { opacity: 1; left: 0; width: 14px; height: 44px; margin-top: -22px; border-radius: 0 4px 4px 0; border-left: 0; pointer-events: auto; cursor: e-resize; }
+:root.ds-rail-off .ds-grip::after { content: "›"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; color: var(--ds-dim); }
+:root.ds-rail-off .ds-rail { visibility: hidden; padding: 0; }
+body.ds-dragging, body.ds-dragging * { cursor: col-resize !important; user-select: none !important; }
+
+/* ---------------------------------------------------------------- the content, set as a document */
+.ds-doc h1 { font-size: 36px; font-weight: 600; color: var(--ds-head); letter-spacing: -.02em; line-height: 1.25; margin: 0 0 14px; }
+.ds-doc h2 { font-size: 27px; font-weight: 600; color: var(--ds-head); letter-spacing: -.015em; margin: 44px 0 10px; }
+.ds-doc h3 { font-size: 20px; font-weight: 600; color: var(--ds-head); margin: 30px 0 8px; }
+.ds-doc h1, .ds-doc h2, .ds-doc h3 { scroll-margin-top: calc(var(--ds-hdr) + 20px); }
+.ds-doc p, .ds-doc li { font-size: 16.5px; line-height: 1.85; }
+.ds-doc .ds-meta-line { font-size: 14px; color: var(--ds-dim); margin-top: -6px; }
+.ds-doc .ds-sub { font-size: 15px; color: var(--ds-dim); line-height: 1.7; }
+.ds-doc table { width: 100%; border: 1px solid var(--ds-rule); border-collapse: separate; border-spacing: 0; border-radius: 2px; font-size: 14.5px; margin: 14px 0 22px; }
+.ds-doc th { text-align: left; font-weight: 600; padding: 13px 16px; background: var(--ds-th); border-bottom: 1px solid var(--ds-rule); }
+.ds-doc td { padding: 11px 16px; border-top: 1px solid var(--ds-rule); vertical-align: top; }
+.ds-doc tbody tr:first-child td { border-top: 0; }
+.ds-doc tbody tr:hover td { background: var(--ds-hover); }
+.ds-doc td.num, .ds-doc th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.ds-callout { border-left: 3px solid var(--ds-accent); background: var(--ds-accent-bg); padding: 10px 16px; border-radius: 0 4px 4px 0; margin: 16px 0; }
+.ds-doc-tools { display: flex; justify-content: flex-end; gap: 10px; margin: 0 0 6px; }
+.ds-doc-tools button { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 14px; color: var(--ds-text); background: var(--ds-bg); border: 1px solid var(--ds-rule); border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+.ds-doc-tools button:hover { background: var(--ds-hover); }
+.ds-doc-tools svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+
+/* empty state, as in the Tinker console */
+.ds-empty { text-align: center; margin: 14vh auto; max-width: 360px; color: var(--ds-dim); font-size: 15px; }
+.ds-empty svg { width: 96px; height: 96px; }
+.ds-empty b { display: block; color: var(--ds-text); font-size: 18px; font-weight: 500; margin: 20px 0 6px; }
+
+/* forms and buttons */
+.ds-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ds-dim); margin: 0 0 12px; }
+input, textarea, select { font: inherit; font-size: 14.5px; color: var(--ds-text); background: var(--ds-bg); border: 1px solid var(--ds-rule); border-radius: 4px; padding: 7px 10px; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--ds-dim); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--ds-accent); }
+.ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-size: 15px; padding: 8px 14px; border-radius: 4px; border: 1px solid var(--ds-rule); background: var(--ds-bg); color: var(--ds-text); cursor: pointer; text-decoration: none !important; }
+.ds-btn:hover { background: var(--ds-hover); }
+.ds-btn.primary { background: var(--ds-btn); border-color: var(--ds-btn); color: var(--ds-btn-text); font-weight: 500; }
+.ds-btn.primary:hover { opacity: .86; }
+
+/* the Markdown viewer */
+.ds-mdview { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: var(--ds-scrim); }
+.ds-mdview > div { width: min(900px, calc(100vw - 32px)); height: min(80vh, 900px); background: var(--ds-bg); border: 1px solid var(--ds-rule); border-radius: 6px; box-shadow: var(--ds-shadow); display: flex; flex-direction: column; }
+.ds-mdview .ds-mvh { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--ds-rule); font-weight: 500; }
+.ds-mdview .ds-mvh span { flex: 1; }
+.ds-mdview pre { margin: 0; flex: 1; overflow: auto; white-space: pre-wrap; border-radius: 0; background: var(--ds-bg); }
+.ds-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ds-btn); color: var(--ds-btn-text); padding: 9px 16px; border-radius: 4px; font-size: 14px; z-index: 70; box-shadow: var(--ds-shadow); }
+
+/* ---------------------------------------------------------------- narrower screens */
+@media (max-width: 1260px) {
+  .ds-view { grid-template-columns: var(--ds-rail-w) 0 minmax(0, 1fr); }
+  .ds-view.ds-no-rail { grid-template-columns: 0 0 minmax(0, 1fr); }
+  .ds-toc { display: none; }
+}
+@media (max-width: 960px) {
+  .ds-top { padding: 0 16px; column-gap: 8px; }
+  .ds-brand { height: 58px; font-size: 19px; }
+  .ds-tabs { height: 44px; }
+  .ds-tools .ds-hide-narrow { display: none; }
+  .ds-search { width: 42px; }
+  .ds-search input { padding-right: 8px; }
+  .ds-search input::placeholder { color: transparent; }
+  .ds-search kbd { display: none; }
+  .ds-top > .ds-search.open { position: fixed; left: 8px; right: 8px; top: 8px; width: calc(100vw - 16px); transition: none; }
+  .ds-view, .ds-view.ds-no-rail { grid-template-columns: minmax(0, 1fr); }
+  .ds-rail { position: static; height: auto; padding: 20px 16px; border-bottom: 1px solid var(--ds-rule); grid-column: 1; }
+  :root.ds-rail-off .ds-rail { visibility: visible; padding: 20px 16px; }
+  .ds-handle { display: none; }
+  .ds-doc { grid-column: 1; padding: 20px 16px 100px; }
+  .ds-doc h1 { font-size: 28px; }
+  .ds-doc-tools { justify-content: flex-start; }
+  .ds-doc-tools button { font-size: 13px; padding: 5px 10px; }
+  .ds-doc table { display: block; overflow-x: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .ds-search, .ds-scrim, .ds-handle::before, .ds-grip, .ds-tabs > * { transition: none; } }
