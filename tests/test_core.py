@@ -102,6 +102,36 @@ def test_inside_lab_step_is_sgd():
     assert out["counts"]["total"] == sum(p.numel() for p in lab.net.parameters())
 
 
+def test_traced_code_is_the_real_network():
+    """The code the Code tab steps through computes exactly what the model computes, and its update is clipped SGD."""
+    import copy
+
+    import torch
+    import torch.nn.functional as F
+
+    from server import model as M, trace_code as TC, tracer
+
+    torch.manual_seed(0)
+    net = M.Net().eval()
+    ref = copy.deepcopy(net)
+    x = torch.tensor(np.asarray(synth.sample("b", np.random.default_rng(2)), np.float32))[None, None]
+    ns, _, _ = tracer.wrap(net)
+    logits, _ = TC.forward(ns, x)
+    assert torch.allclose(logits, ref(x), atol=1e-5)
+    out = tracer.trace(net, x, "6", 0.05)
+    assert any(s["func"] == "forward" for s in out["steps"]) and out["steps"][-1]["event"] == "return"
+    lr, y = 0.05, torch.tensor([CLASSES.index("6")])
+    loss = F.cross_entropy(ref(x), y)
+    loss.backward()
+    n = torch.sqrt(sum((p.grad ** 2).sum() for p in ref.parameters())).item()
+    with torch.no_grad():
+        for p in ref.parameters():
+            p -= lr * min(1.0, 1.0 / n) * p.grad
+    for a, b in zip(net.parameters(), ref.parameters()):
+        assert torch.allclose(a, b, atol=1e-6)
+    assert abs(out["loss"] - loss.item()) < 1e-5
+
+
 if __name__ == "__main__":
     for k, f in list(globals().items()):
         if k.startswith("test_"):

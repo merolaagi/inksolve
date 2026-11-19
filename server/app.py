@@ -530,6 +530,25 @@ async def inside_opt(req: Request):
     return lab.state()
 
 
+@app.post("/api/code/trace")
+async def code_trace(req: Request):
+    """Run one training step of the Inside copy line by line and return what each line did."""
+    from . import tracer
+
+    b = await req.json()
+    label = b.get("label") or "7"
+    if label not in CLASSES:
+        err("Unknown symbol.")
+    x = _lab_x(b)
+    with lab.lock:
+        lab.ensure()
+        out = tracer.trace(lab.net, x, label, float(b.get("lr") or lab.cfg["lr"]))
+        lab.steps += 1
+        lab.history.append({"step": lab.steps, "loss": None, "kind": "traced"})
+    out["source"] = lab.source
+    return out
+
+
 app.mount("/static", StaticFiles(directory=ROOT / "web"), name="static")
 
 

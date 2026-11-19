@@ -23,6 +23,7 @@
     <button data-ds-tab="train" data-ds-hint="train and compare symbol readers">Train</button>
     <button data-ds-tab="experiment" data-ds-hint="how few examples does it need">Experiment</button>
     <button data-ds-tab="inside" data-ds-hint="every weight in 3D: forward pass, gradients, updates, scale to 20B">Inside the model</button>
+    <button data-ds-tab="code" data-ds-hint="the training step's Python, line by line, on the real weights, like Python Tutor">Code</button>
     <button data-ds-tab="how" data-ds-hint="how reading with context works">How it works</button>
   </nav>
   <div class="ds-banner" id="banner" hidden></div>
@@ -228,6 +229,43 @@
     </article>
   </section>
 
+  <!-- ======================================================== CODE, STEP BY STEP -->
+  <section class="ds-view code-view" data-ds-view="code" hidden>
+    <aside class="ds-rail">
+      <div class="ds-nav-title">Code, step by step</div>
+      <ul class="ds-nav" id="cd-phases"></ul>
+      <h2>Run one step on</h2>
+      <div class="in-samples" id="cd-samples"></div>
+      <label class="ds-field">It really is<select id="cd-label"></select></label>
+      <label class="ds-field">Learning rate<input type="number" id="cd-lr" step="0.01" min="0.0001" max="2" value="0.02"></label>
+      <button class="ds-btn primary" id="cd-run">Run a traced training step</button>
+      <p class="ds-hint">This really runs the code on the right, line by line, on the real weights of the copy in <a href="#/inside">Inside the model</a> (the mark you drew there is used too), and records what every line did. Saying it is a different symbol than it is makes the gradients large and easy to see.</p>
+      <h2>Keys</h2>
+      <p class="ds-hint">← → step · Home / End · click a line to run to it</p>
+    </aside>
+    <article class="ds-doc">
+      <h1 class="ds-no-toc">Code, step by step</h1>
+      <p class="ds-meta-line" id="cd-meta">Like Python Tutor, for a neural network: green is the line that just ran, red the one that runs next.</p>
+      <div class="tutor ds-no-md" id="tutor">
+        <div class="t-code">
+          <div class="t-ctl">
+            <button class="ds-btn small" id="cd-first" title="First (Home)">⏮</button>
+            <button class="ds-btn small" id="cd-prev" title="Back (←)">◀ Back</button>
+            <span id="cd-count">–</span>
+            <button class="ds-btn small" id="cd-next" title="Forward (→)">Forward ▶</button>
+            <button class="ds-btn small" id="cd-last" title="Last (End)">⏭</button>
+          </div>
+          <input type="range" id="cd-slider" min="0" max="0" value="0" aria-label="Step">
+          <div class="t-note" id="cd-note"></div>
+          <div class="t-lines" id="cd-lines"></div>
+        </div>
+        <div class="t-frames"><div class="t-h">Frames</div><div id="cd-frames"></div></div>
+        <div class="t-objects"><div class="t-h">Objects</div><div id="cd-objects"></div><div class="t-h" style="margin-top:14px">The model's weights</div><div id="cd-model"></div></div>
+        <svg class="t-arrows" id="cd-arrows"></svg>
+      </div>
+    </article>
+  </section>
+
   <!-- ======================================================== HOW IT WORKS -->
   <section class="ds-view" data-ds-view="how" hidden>
     <aside class="ds-rail">
@@ -326,5 +364,6 @@
 <script src="/static/app.js"></script>
 <script type="importmap">{"imports": {"three": "/static/vendor/three/three.module.min.js"}}</script>
 <script type="module" src="/static/inside.js"></script>
+<script src="/static/tutor.js"></script>
 </body>
 </html>

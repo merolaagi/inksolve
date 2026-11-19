@@ -122,6 +122,7 @@ textarea#typed { width: 100%; font: 18px/1.5 var(--ds-mono); padding: 12px 14px;
 .in-samples { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
 .in-samples button { width: 28px; height: 28px; border: 1px solid var(--ds-rule); border-radius: 4px; background: var(--ds-bg); color: var(--ds-text); cursor: pointer; font: 500 14px var(--ds-sans); }
 .in-samples button:hover { border-color: var(--ds-accent); }
+.in-samples button.on { border-color: var(--ds-accent); background: var(--ds-accent-bg); }
 .in-steps { display: grid; grid-template-columns: 1fr; gap: 6px; margin-bottom: 4px; }
 .in-steps .ds-btn { text-align: left; }
 .in-steps .ds-btn.done { border-color: var(--ds-accent); background: var(--ds-accent-bg); }
@@ -160,3 +161,61 @@ textarea#typed { width: 100%; font: 18px/1.5 var(--ds-mono); padding: 12px 14px;
 .scale-out span { font-size: 12.5px; color: var(--ds-dim); }
 input#scale-n { width: 100%; accent-color: var(--ds-accent); }
 @media (max-width: 760px) { .scene-labels div small, .scene-help { display: none; } .scene { height: 58vh; } .scene-legend { display: none; } .scene-cap { max-width: 92%; font-size: 12.5px; } }
+
+/* ---------------------------------------------------------------- code, step by step */
+@media (min-width: 1261px) { .ds-view.code-view { grid-template-columns: var(--ds-rail-w) 0 minmax(0, 1fr) 0; } }
+.code-view .ds-toc { display: none; }
+.code-view .ds-doc { max-width: none; }
+.tutor { position: relative; display: grid; grid-template-columns: minmax(440px, 1.25fr) minmax(170px, .45fr) minmax(270px, .9fr); gap: 18px; align-items: start; margin-top: 8px; }
+.t-code { position: sticky; top: calc(var(--ds-hdr) + 10px); }
+.t-ctl { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13.5px; }
+.t-ctl #cd-count { flex: 1; text-align: center; color: var(--ds-dim); font-variant-numeric: tabular-nums; }
+#cd-slider { width: 100%; accent-color: var(--ds-accent); margin: 6px 0 8px; }
+.t-lines { font: 12.5px/1.62 var(--ds-mono); border: 1px solid var(--ds-rule); border-radius: 8px; background: var(--ds-th); padding: 8px 0; max-height: calc(100vh - var(--ds-hdr) - 300px); overflow: auto; }
+.t-line { display: grid; grid-template-columns: 22px 30px max-content; white-space: pre; cursor: pointer; padding-right: 10px; min-width: 100%; width: max-content; }
+.t-line:hover { background: var(--ds-hover); }
+.t-line .ar { text-align: center; font-family: var(--ds-sans); font-weight: 700; }
+.t-line .ln { color: var(--ds-faint); text-align: right; padding-right: 10px; user-select: none; }
+.t-line .ar, .t-line .ln { position: sticky; left: 0; background: inherit; }
+.t-line .ln { left: 22px; }
+.t-line .cm { color: var(--ds-faint); }
+.t-line .kw { color: var(--ds-accent); }
+.t-line.ran { background: color-mix(in srgb, #2e9e6b 16%, transparent); }
+.t-line.ran .ar { color: #2e9e6b; }
+.t-line.next { background: color-mix(in srgb, #d0453f 13%, transparent); }
+.t-line.next .ar { color: #d0453f; }
+.t-line.dim { opacity: .5; }
+.t-note { margin: 0 0 10px; font-size: 14px; line-height: 1.55; border-left: 3px solid var(--ds-accent); background: var(--ds-accent-bg); padding: 8px 12px; border-radius: 0 6px 6px 0; min-height: 3.2em; }
+.t-note code { font-size: 12.5px; }
+.t-h { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ds-dim); margin-bottom: 6px; }
+.t-frame { border: 1px solid var(--ds-rule); border-radius: 8px; margin-bottom: 10px; background: var(--ds-bg); }
+.t-frame.active { border-color: var(--ds-accent); }
+.t-frame > b { display: block; font: 600 12.5px var(--ds-mono); padding: 5px 9px; border-bottom: 1px solid var(--ds-rule); background: var(--ds-th); border-radius: 8px 8px 0 0; }
+.t-var { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 3px 9px; font: 12.5px var(--ds-mono); }
+.t-var .nm { color: var(--ds-text); text-align: right; }
+.t-var .vl { justify-self: end; color: var(--ds-text); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-var.fresh { background: color-mix(in srgb, #2e9e6b 14%, transparent); }
+.chip { display: inline-block; font: 11.5px var(--ds-mono); border: 1px solid var(--ds-rule); background: var(--ds-th); border-radius: 10px; padding: 0 7px; cursor: pointer; white-space: nowrap; }
+.chip.hl, .t-obj.hl, .t-prow.hl { outline: 2px solid var(--ds-accent); }
+.t-obj { border: 1px solid var(--ds-rule); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; background: var(--ds-bg); font-size: 12.5px; }
+.t-obj.new { border-color: #2e9e6b; box-shadow: 0 0 0 1px #2e9e6b inset; }
+.t-obj.chg { border-color: var(--ds-accent); box-shadow: 0 0 0 1px var(--ds-accent) inset; }
+.t-obj .hd { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.t-obj .hd b { font: 600 12.5px var(--ds-mono); }
+.t-obj .hd span { color: var(--ds-dim); font-family: var(--ds-mono); font-size: 11.5px; }
+.t-obj .tag { margin-left: auto; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.t-obj.new .tag { color: #2e9e6b; } .t-obj.chg .tag { color: var(--ds-accent); }
+.t-obj canvas, .t-prow canvas { display: block; image-rendering: pixelated; border-radius: 3px; margin: 6px 0 4px; max-width: 100%; background: var(--ds-th); }
+.t-obj .st { color: var(--ds-dim); font-family: var(--ds-mono); font-size: 11px; line-height: 1.5; word-break: break-all; }
+.t-obj .big { font: 600 20px var(--ds-mono); margin: 4px 0; }
+.t-obj .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.t-obj .pair small, .t-prow small { color: var(--ds-dim); font-size: 10.5px; }
+.t-prow { display: grid; grid-template-columns: 62px 1fr 1fr; gap: 8px; align-items: start; border-top: 1px solid var(--ds-rule); padding: 6px 4px; font-size: 11.5px; border-radius: 4px; }
+.t-prow > b { font: 600 11.5px var(--ds-mono); padding-top: 6px; }
+.t-prow.chg { background: var(--ds-accent-bg); }
+.t-prow.gnew { background: color-mix(in srgb, #2e9e6b 12%, transparent); }
+.t-prow .none { color: var(--ds-faint); padding-top: 6px; display: block; }
+.t-arrows { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+@media (max-width: 1180px) { .tutor { grid-template-columns: minmax(170px, .5fr) minmax(260px, 1fr); } .t-code { grid-column: 1 / -1; position: static; } .t-lines { max-height: 420px; } }
+@media (max-width: 640px) { .tutor { grid-template-columns: 1fr; } .t-arrows { display: none; } .t-line .tx { font-size: 11.5px; } .tutor { gap: 10px; } }
+.tutor > * { min-width: 0; }
