@@ -21,6 +21,7 @@ letter x, and how a b and a 6 get told apart. Then SymPy solves it and shows the
 | **Your handwriting** | Write samples, guided towards the look-alikes (1/7, b/6, z/2, x/+). See what each symbol has been learnt from. Download MNIST and HASYv2. |
 | **Train** | Train a reader from any mix of synthetic handwriting, MNIST, HASYv2 and yours. Compare models on writers they never saw: accuracy, 1→7 confusion, calibration. |
 | **Experiment** | How few examples does a reader need? Trains with 5 to 1,000 real examples per symbol, from scratch, with augmentation, and from a synthetic-pretrained start, then measures single marks and whole sums with and without context, and how many mistakes each mode would hide when marking. |
+| **Inside the model** | Every one of the reader's 140,696 weights as a block in 3D (height and colour = value). Draw a mark and watch the forward pass light up the weights that do the work, the backward pass give each weight its gradient, and the update move them. Click a block to follow one weight through the arithmetic. Train on batches live, from the trained reader or from random weights, and see a slider that scales the same picture to 20 billion parameters: memory, operations per token, training time, and where the weights sit in a transformer. |
 | **How it works** | The method, in plain words. |
 
 ## What it reads

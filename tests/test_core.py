@@ -75,6 +75,33 @@ def test_segmentation_on_synthetic_ink():
     assert ok >= 17
 
 
+def test_inside_lab_step_is_sgd():
+    """One step in the lab moves each weight by -lr x (clipped) gradient, and only weights with a gradient move."""
+    import base64
+
+    import torch
+
+    from server import inside as IN, model as M
+
+    class Reg:
+        def load(self, mid=None):
+            torch.manual_seed(0)
+            n = M.Net()
+            n.eval()
+            return n, 1.0, {"name": "test"}
+    lab = IN.Lab(Reg())
+    lab.reset("trained", "sgd", 0.01)
+    x = torch.tensor(np.asarray(synth.sample("7", np.random.default_rng(1)), np.float32))[None, None]
+    out = lab.snapshot(x, label="7", step=True)
+    dec = lambda b: np.frombuffer(base64.b64decode(b), np.float16).astype(np.float32)
+    scale = min(1.0, IN.CLIP / out["grad_norm"])
+    for l in out["layers"]:
+        g, d = dec(l["g"]), dec(l["d"])
+        assert np.allclose(d, -0.01 * scale * g, atol=2e-4), l["name"]
+        assert ((g == 0) <= (np.abs(d) < 1e-6)).all()
+    assert out["counts"]["total"] == sum(p.numel() for p in lab.net.parameters())
+
+
 if __name__ == "__main__":
     for k, f in list(globals().items()):
         if k.startswith("test_"):

@@ -22,6 +22,7 @@
     <button data-ds-tab="hand" data-ds-hint="teach InkSolve your handwriting; datasets">Your handwriting</button>
     <button data-ds-tab="train" data-ds-hint="train and compare symbol readers">Train</button>
     <button data-ds-tab="experiment" data-ds-hint="how few examples does it need">Experiment</button>
+    <button data-ds-tab="inside" data-ds-hint="every weight in 3D: forward pass, gradients, updates, scale to 20B">Inside the model</button>
     <button data-ds-tab="how" data-ds-hint="how reading with context works">How it works</button>
   </nav>
   <div class="ds-banner" id="banner" hidden></div>
@@ -169,6 +170,64 @@
     <article class="ds-doc" id="exp-body"></article>
   </section>
 
+  <!-- ======================================================== INSIDE THE MODEL -->
+  <section class="ds-view" data-ds-view="inside" hidden>
+    <aside class="ds-rail">
+      <div class="ds-nav-title">Inside the model</div>
+      <h2>Input</h2>
+      <div class="in-input">
+        <canvas id="in-pad" width="112" height="112" aria-label="Draw one mark"></canvas>
+        <div>
+          <p class="ds-hint" style="margin:0 0 6px">Draw one mark, or take a sample:</p>
+          <div class="in-samples" id="in-samples"></div>
+          <button class="ds-btn small" id="in-clear">Clear</button>
+        </div>
+      </div>
+      <label class="ds-field">It really is<select id="in-label"></select></label>
+      <h2>Step through</h2>
+      <div class="in-steps">
+        <button class="ds-btn" id="in-fwd" title="Run the mark through every layer">1 · Forward</button>
+        <button class="ds-btn" id="in-bwd" title="Work out each weight's gradient">2 · Backward</button>
+        <button class="ds-btn" id="in-upd" title="Move every weight a little">3 · Update</button>
+      </div>
+      <button class="ds-btn primary" id="in-all">One full training step</button>
+      <h2>Colour by</h2>
+      <div class="seg wrap" role="radiogroup" aria-label="Colour by" id="in-mode">
+        <button data-cmode="value" role="radio" aria-checked="true">Value</button>
+        <button data-cmode="use" role="radio" aria-checked="false">Use</button>
+        <button data-cmode="grad" role="radio" aria-checked="false">Gradient</button>
+        <button data-cmode="update" role="radio" aria-checked="false">Update</button>
+      </div>
+      <p class="ds-hint" id="in-mode-hint"></p>
+      <label class="ds-field">Show updates enlarged ×<span id="in-exag-v">300</span><input type="range" id="in-exag" min="0" max="4" step="0.01" value="2.48"></label>
+      <h2>Train</h2>
+      <div class="seg" role="radiogroup" aria-label="Optimizer" id="in-opt">
+        <button data-opt="sgd" role="radio" aria-checked="true">SGD</button>
+        <button data-opt="adam" role="radio" aria-checked="false">Adam</button>
+      </div>
+      <label class="ds-field">Learning rate<input type="number" id="in-lr" step="0.005" min="0.0001" max="2" value="0.02"></label>
+      <button class="ds-btn" id="in-play">▶ Train on batches</button>
+      <div class="row" style="margin:6px 0 0"><button class="ds-btn" id="in-reset-t" title="A fresh copy of the reader in use">Reset: trained</button><button class="ds-btn" id="in-reset-r" title="Every weight random">Reset: random</button></div>
+      <p class="ds-hint">This is a copy. Nothing here changes the reader the Solve tab uses.</p>
+      <h2>Go to</h2>
+      <ul class="ds-nav" id="in-stages"><li><button data-fly="all" aria-selected="true">Whole network</button></li></ul>
+    </aside>
+    <article class="ds-doc">
+      <h1 class="ds-no-toc">Inside the model</h1>
+      <p class="ds-meta-line" id="in-meta">Loading the network…</p>
+      <div class="scene ds-no-md" id="scene">
+        <canvas id="in-canvas" aria-label="3D view of every weight in the network"></canvas>
+        <div class="scene-labels" id="in-labels"></div>
+        <div class="scene-tip" id="in-tip" hidden></div>
+        <div class="scene-cap" id="in-cap"></div>
+        <div class="scene-legend" id="in-legend"></div>
+        <div class="scene-help">Drag to turn · right-drag or two fingers to move · scroll to zoom · click a block to follow one weight</div>
+      </div>
+      <div id="in-body"></div>
+      <div id="in-scale"></div>
+    </article>
+  </section>
+
   <!-- ======================================================== HOW IT WORKS -->
   <section class="ds-view" data-ds-view="how" hidden>
     <aside class="ds-rail">
@@ -265,5 +324,7 @@
 <script src="/static/docs-shell.js"></script>
 <script src="/static/chart.js"></script>
 <script src="/static/app.js"></script>
+<script type="importmap">{"imports": {"three": "/static/vendor/three/three.module.min.js"}}</script>
+<script type="module" src="/static/inside.js"></script>
 </body>
 </html>

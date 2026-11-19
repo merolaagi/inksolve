@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
 from . import decode as D
+from . import inside as IN
 from . import experiment as E
 from . import mathparse as MP
 from . import model as M
@@ -40,6 +41,7 @@ DATA.mkdir(parents=True, exist_ok=True)
 
 store = Store(DATA)
 registry = M.Registry(DATA, ROOT / "models" / "starter.pt")
+lab = IN.Lab(registry)
 jobs = Jobs(DATA)
 HISTORY = DATA / "history.jsonl"
 _reads = {}                      # recent readings, so a correction can save the exact mark
@@ -459,6 +461,73 @@ def health():
     net, T, meta = registry.load() if registry.active_id() else (None, None, None)
     return {"ok": True, "version": VERSION, "device": M.device(), "model": meta and {"id": meta.get("id"), "name": meta.get("name"),
             "temperature": meta.get("temperature")}, "classes": CLASSES, "jobs": jobs.active(), "password": bool(PASSWORD)}
+
+
+# ------------------------------------------------------------------ inside the model
+_lab_input = {"x": None}
+
+
+def _lab_x(b):
+    import torch
+
+    from .glyphs import render_strokes
+
+    if b.get("strokes"):
+        a = render_strokes([s for s in b["strokes"] if s])
+    elif b.get("sample"):
+        if b["sample"] not in CLASSES:
+            err("Unknown symbol.")
+        a = IN.sample_input(b["sample"], b.get("seed"))
+    elif _lab_input["x"] is not None:
+        return _lab_input["x"]
+    else:
+        a = IN.sample_input("7", 3)
+    x = torch.tensor(np.asarray(a, np.float32))[None, None]
+    _lab_input["x"] = x
+    return x
+
+
+@app.post("/api/inside/look")
+async def inside_look(req: Request):
+    """Forward a mark through the scratch copy; with a label also backward; with step also update."""
+    b = await req.json()
+    label = b.get("label")
+    if label is not None and label not in CLASSES:
+        err("Unknown symbol.")
+    x = _lab_x(b)
+    return lab.snapshot(x, label=label, step=bool(b.get("step")) and label is not None)
+
+
+@app.post("/api/inside/train")
+async def inside_train(req: Request):
+    b = await req.json()
+    steps = max(1, min(200, int(b.get("steps") or 10)))
+    batch = max(4, min(256, int(b.get("batch") or 32)))
+    return lab.train(steps, batch, store)
+
+
+@app.post("/api/inside/reset")
+async def inside_reset(req: Request):
+    b = await req.json()
+    start = b.get("start", "trained")
+    if start not in ("trained", "random"):
+        err("start is trained or random")
+    opt = b.get("optimizer")
+    if opt not in (None, "sgd", "adam"):
+        err("optimizer is sgd or adam")
+    return lab.reset(start, opt, b.get("lr"))
+
+
+@app.post("/api/inside/optimizer")
+async def inside_opt(req: Request):
+    b = await req.json()
+    if b.get("optimizer") not in (None, "sgd", "adam"):
+        err("optimizer is sgd or adam")
+    lr = b.get("lr")
+    if lr is not None and not 1e-5 <= float(lr) <= 2:
+        err("Learning rate must be between 0.00001 and 2.")
+    lab.set_opt(b.get("optimizer"), lr)
+    return lab.state()
 
 
 app.mount("/static", StaticFiles(directory=ROOT / "web"), name="static")
